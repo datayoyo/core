@@ -201,6 +201,8 @@ namespace OOX
 				return smart_ptr<OOX::File>(new CRdRichValueTypesFile(pMain, oRootPath, oFileName));
 			else if (oRelation.Type() == FileTypes::RichValueRel)
 				return smart_ptr<OOX::File>(new CRichValueRelFile(pMain, oRootPath, oFileName));
+			else if (oRelation.Type() == FileTypes::FeaturePropertyBag)
+				return smart_ptr<OOX::File>(new CFeaturePropertyBagFile(pMain, oRootPath, oFileName));
 
 			return smart_ptr<OOX::File>( new UnknowTypeFile(pMain) );
 		}
@@ -345,6 +347,8 @@ namespace OOX
 				return smart_ptr<OOX::File>(new CRdRichValueTypesFile(pMain, oRootPath, oFileName));
 			else if (pRelation->Type() == FileTypes::RichValueRel)
 				return smart_ptr<OOX::File>(new CRichValueRelFile(pMain, oRootPath, oFileName));
+			else if (pRelation->Type() == FileTypes::FeaturePropertyBag)
+				return smart_ptr<OOX::File>(new CFeaturePropertyBagFile(pMain, oRootPath, oFileName));
 			else if (pRelation->Type() == FileTypes::XmlMaps)
 			return smart_ptr<OOX::File>(new CXmlMapsFile(pMain, oRootPath, oFileName));
 

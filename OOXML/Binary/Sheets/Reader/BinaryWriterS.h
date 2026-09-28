@@ -69,6 +69,7 @@ namespace OOX
 		class CThreadedCommentMention;
 		class CBorderProp;
 		class CXfs;
+		class CFeaturePropertyBagFile;
 		class CPatternFill;
 		class CGradientFill;
 		class CGradientStop;
@@ -161,6 +162,7 @@ namespace BinXlsxRW
 		NSFontCutter::CEmbeddedFontsManager*	m_pEmbeddedFontsManager;
 	public:
 		BinaryStyleTableWriter(NSBinPptxRW::CBinaryFileWriter &oCBufferedStream, NSFontCutter::CEmbeddedFontsManager* pEmbeddedFontsManager);
+		OOX::Spreadsheet::CFeaturePropertyBagFile* m_pFeaturePropertyBags = NULL; // resolves xfComplement indices
 		void Write(OOX::Spreadsheet::CStyles& styles, PPTX::Theme* pTheme, DocWrapper::FontProcessor& oFontProcessor);
 		void WriteStylesContent(OOX::Spreadsheet::CStyles& styles, PPTX::Theme* pTheme, DocWrapper::FontProcessor& oFontProcessor);
 		void WriteBorders(const OOX::Spreadsheet::CBorders& borders, OOX::Spreadsheet::CIndexedColors* pIndexedColors, PPTX::Theme* pTheme);

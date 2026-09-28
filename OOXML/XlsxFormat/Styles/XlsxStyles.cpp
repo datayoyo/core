@@ -1310,6 +1310,120 @@ xmlns:x16r2=\"http://schemas.microsoft.com/office/spreadsheetml/2015/02/main\">"
 			return m_oReadPath;
 		}
 
+//---------------------------------------------------------------------------------------------------------------------------
+		CFeaturePropertyBagFile::CFeaturePropertyBagFile(OOX::Document* pMain) : OOX::File(pMain)
+		{
+		}
+		CFeaturePropertyBagFile::CFeaturePropertyBagFile(OOX::Document* pMain, const CPath& oRootPath, const CPath& oPath) : OOX::File(pMain)
+		{
+			read(oRootPath, oPath);
+		}
+		CFeaturePropertyBagFile::~CFeaturePropertyBagFile()
+		{
+		}
+		void CFeaturePropertyBagFile::read(const CPath& oPath)
+		{
+			CPath oRootPath;
+			read(oRootPath, oPath);
+		}
+		void CFeaturePropertyBagFile::read(const CPath& oRootPath, const CPath& oPath)
+		{
+			NSFile::CFileBinary::ReadAllTextUtf8(oPath.GetPath(), m_sXml);
+
+			XmlUtils::CXmlLiteReader oReader;
+			if (!oReader.FromString(m_sXml) || !oReader.ReadNextNode() || oReader.IsEmptyNode())
+				return;
+
+			int nBagsDepth = oReader.GetDepth();
+			while (oReader.ReadNextSiblingNode(nBagsDepth))
+			{
+				if (L"bag" != XmlUtils::GetNameNoNS(oReader.GetName()))
+					continue;
+				// bagId values are 0-based positions in the list of <bag> elements
+				m_arrBags.push_back(CBag());
+				CBag& oBag = m_arrBags.back();
+				WritingElement_ReadAttributes_Start_No_NS(oReader)
+					WritingElement_ReadAttributes_ReadSingle(oReader, L"type", oBag.sType)
+				WritingElement_ReadAttributes_End_No_NS(oReader)
+				if (oReader.IsEmptyNode())
+					continue;
+
+				int nBagDepth = oReader.GetDepth();
+				while (oReader.ReadNextSiblingNode(nBagDepth))
+				{
+					std::wstring sName = XmlUtils::GetNameNoNS(oReader.GetName());
+					std::wstring sKey;
+					WritingElement_ReadAttributes_Start_No_NS(oReader)
+						WritingElement_ReadAttributes_ReadSingle(oReader, L"k", sKey)
+					WritingElement_ReadAttributes_End_No_NS(oReader)
+					if (L"bagId" == sName)
+					{
+						oBag.mapBagIds[sKey] = XmlUtils::GetUInteger(oReader.GetText2());
+					}
+					else if (L"a" == sName && L"MappedFeaturePropertyBags" == sKey && !oReader.IsEmptyNode())
+					{
+						int nArrayDepth = oReader.GetDepth();
+						while (oReader.ReadNextSiblingNode(nArrayDepth))
+						{
+							if (L"bagId" == XmlUtils::GetNameNoNS(oReader.GetName()))
+								oBag.arrMapped.push_back(XmlUtils::GetUInteger(oReader.GetText2()));
+						}
+					}
+				}
+			}
+		}
+		void CFeaturePropertyBagFile::write(const CPath& oPath, const CPath& oDirectory, CContentTypes& oContent) const
+		{
+			std::wstring sXml = m_sXml;
+			if (sXml.empty())
+			{
+				sXml = L"<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\
+<FeaturePropertyBags xmlns=\"http://schemas.microsoft.com/office/spreadsheetml/2022/featurepropertybag\">\
+<bag type=\"Checkbox\"/>\
+<bag type=\"XFControls\"><bagId k=\"CellControl\">0</bagId></bag>\
+<bag type=\"XFComplement\"><bagId k=\"XFControls\">1</bagId></bag>\
+<bag type=\"XFComplements\" extRef=\"XFComplementsMapperExtRef\"><a k=\"MappedFeaturePropertyBags\"><bagId>2</bagId></a></bag>\
+</FeaturePropertyBags>";
+			}
+			NSFile::CFileBinary::SaveToFile(oPath.GetPath(), sXml);
+			oContent.Registration(type().OverrideType(), oDirectory, oPath.GetFilename());
+		}
+		const OOX::FileType CFeaturePropertyBagFile::type() const
+		{
+			return OOX::Spreadsheet::FileTypes::FeaturePropertyBag;
+		}
+		const CPath CFeaturePropertyBagFile::DefaultDirectory() const
+		{
+			return type().DefaultDirectory();
+		}
+		const CPath CFeaturePropertyBagFile::DefaultFileName() const
+		{
+			return type().DefaultFileName();
+		}
+		const CFeaturePropertyBagFile::CBag* CFeaturePropertyBagFile::GetBag(const CBag* pFrom, const std::wstring& sKey, const std::wstring& sType) const
+		{
+			if (!pFrom)
+				return NULL;
+			std::map<std::wstring, unsigned int>::const_iterator it = pFrom->mapBagIds.find(sKey);
+			if (it == pFrom->mapBagIds.end() || it->second >= m_arrBags.size() || m_arrBags[it->second].sType != sType)
+				return NULL;
+			return &m_arrBags[it->second];
+		}
+		bool CFeaturePropertyBagFile::IsCheckbox(unsigned int nIndex) const
+		{
+			for (size_t i = 0; i < m_arrBags.size(); ++i)
+			{
+				if (L"XFComplements" != m_arrBags[i].sType)
+					continue;
+				const std::vector<unsigned int>& arrMapped = m_arrBags[i].arrMapped;
+				if (nIndex >= arrMapped.size() || arrMapped[nIndex] >= m_arrBags.size() || L"XFComplement" != m_arrBags[arrMapped[nIndex]].sType)
+					return false;
+				const CBag* pControls = GetBag(&m_arrBags[arrMapped[nIndex]], L"XFControls", L"XFControls");
+				return NULL != GetBag(pControls, L"CellControl", L"Checkbox");
+			}
+			return false;
+		}
+
 	} //Spreadsheet
 } // namespace OOX
 

@@ -361,12 +361,18 @@ namespace OOX
 			WritingStringNullableAttrBool(L"applyProtection", m_oApplyProtection);
 			WritingStringNullableAttrBool(L"quotePrefix", m_oQuotePrefix);
 			WritingStringNullableAttrBool(L"pivotButton", m_oPivotButton);
-			if (m_oAligment.IsInit() || m_oProtection.IsInit())
+			if (m_oAligment.IsInit() || m_oProtection.IsInit() || m_oXfComplement.IsInit())
 			{
 				writer.WriteString(_T(">"));
 
 				if (m_oAligment.IsInit())m_oAligment->toXML(writer);
 				if (m_oProtection.IsInit())m_oProtection->toXML(writer);
+				if (m_oXfComplement.IsInit())
+				{
+					writer.WriteString(L"<extLst><ext uri=\"{C7286773-470A-42A8-94C5-96B5CB345126}\" xmlns:xfpb=\"http://schemas.microsoft.com/office/spreadsheetml/2022/featurepropertybag\"><xfpb:xfComplement i=\"");
+					writer.AddInt(*m_oXfComplement);
+					writer.WriteString(L"\"/></ext></extLst>");
+				}
 
 				writer.WriteString(_T("</xf>"));
 			}
@@ -388,6 +394,31 @@ namespace OOX
 					m_oAligment = oReader;
 				else if( _T("protection") == sName )
 					m_oProtection = oReader;
+				else if (L"extLst" == sName && !oReader.IsEmptyNode())
+				{
+					int nExtDepth = oReader.GetDepth();
+					while (oReader.ReadNextSiblingNode(nExtDepth))
+					{
+						std::wstring sUri;
+						WritingElement_ReadAttributes_Start_No_NS(oReader)
+							WritingElement_ReadAttributes_ReadSingle(oReader, L"uri", sUri)
+						WritingElement_ReadAttributes_End_No_NS(oReader)
+						if (L"{C7286773-470A-42A8-94C5-96B5CB345126}" != sUri || oReader.IsEmptyNode())
+							continue;
+						int nComplementDepth = oReader.GetDepth();
+						while (oReader.ReadNextSiblingNode(nComplementDepth))
+						{
+							if (L"xfComplement" != XmlUtils::GetNameNoNS(oReader.GetName()))
+								continue;
+							std::wstring sIndex;
+							WritingElement_ReadAttributes_Start_No_NS(oReader)
+								WritingElement_ReadAttributes_ReadSingle(oReader, L"i", sIndex)
+							WritingElement_ReadAttributes_End_No_NS(oReader)
+							if (!sIndex.empty())
+								m_oXfComplement = XmlUtils::GetUInteger(sIndex);
+						}
+					}
+				}
 			}
 		}
 		EElementType CXfs::getType () const

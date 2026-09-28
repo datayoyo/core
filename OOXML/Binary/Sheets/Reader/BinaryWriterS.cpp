@@ -1481,6 +1481,13 @@ void BinaryStyleTableWriter::WriteXfs(const OOX::Spreadsheet::CXfs& xfs)
 		WriteProtection(xfs.m_oProtection.get());
 		m_oBcw.WriteItemWithLengthEnd(nCurPos);
 	}
+	//Checkbox
+	if (xfs.m_oXfComplement.IsInit() && m_pFeaturePropertyBags && m_pFeaturePropertyBags->IsCheckbox(*xfs.m_oXfComplement))
+	{
+		m_oBcw.m_oStream.WriteBYTE(c_oSerXfsTypes::Checkbox);
+		m_oBcw.m_oStream.WriteBYTE(c_oSerPropLenType::Byte);
+		m_oBcw.m_oStream.WriteBOOL(true);
+	}
 }
 void BinaryStyleTableWriter::WriteProtection(const OOX::Spreadsheet::CProtection& protection)
 {
@@ -9372,6 +9379,11 @@ void BinaryFileWriter::WriteContent(OOX::Document *pDocument, NSFontCutter::CEmb
 	{
 		nCurPos = WriteTableStart(c_oSerTableTypes::Styles);
 		BinaryStyleTableWriter oBinaryStyleTableWriter(m_oBcw->m_oStream, pEmbeddedFontsManager);
+		if (pWorkbook)
+		{
+			smart_ptr<OOX::File> pFile = pWorkbook->Find(OOX::Spreadsheet::FileTypes::FeaturePropertyBag);
+			oBinaryStyleTableWriter.m_pFeaturePropertyBags = dynamic_cast<OOX::Spreadsheet::CFeaturePropertyBagFile*>(pFile.GetPointer());
+		}
 		oBinaryStyleTableWriter.Write(*pStyles, pXlsx ? pXlsx->GetTheme() : NULL, m_oFontProcessor);
 		WriteTableEnd(nCurPos);
 	}

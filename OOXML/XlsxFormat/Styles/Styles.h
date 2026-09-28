@@ -151,6 +151,40 @@ namespace OOX
 			void SetFillXLS(XLS::BaseObjectPtr XFSPtr, XLS::BaseObjectPtr workbookPtr);
 			void SetBordersXLS(XLS::BaseObjectPtr XFSPtr,XLS::BaseObjectPtr workbookPtr);
 		};
+
+		// xl/featurePropertyBag/featurePropertyBag.xml ([MS-XLSX] 2.3.9): the cell controls (checkboxes) that
+		// cellXfs reach through extLst/xfpb:xfComplement@i
+		class CFeaturePropertyBagFile : public OOX::File
+		{
+		public:
+			CFeaturePropertyBagFile(OOX::Document* pMain);
+			CFeaturePropertyBagFile(OOX::Document* pMain, const CPath& oRootPath, const CPath& oPath);
+			virtual ~CFeaturePropertyBagFile();
+
+			virtual void read(const CPath& oPath);
+			virtual void read(const CPath& oRootPath, const CPath& oPath);
+			// a read part is written back as read (xf indices keep their meaning); a new one gets the layout Excel
+			// writes, in which xfComplement 0 is a checkbox
+			virtual void write(const CPath& oPath, const CPath& oDirectory, CContentTypes& oContent) const;
+			virtual const OOX::FileType type() const;
+			virtual const CPath DefaultDirectory() const;
+			virtual const CPath DefaultFileName() const;
+
+			// XFComplements.MappedFeaturePropertyBags[nIndex] -> XFComplement.XFControls -> XFControls.CellControl -> Checkbox
+			bool IsCheckbox(unsigned int nIndex) const;
+
+		private:
+			struct CBag
+			{
+				std::wstring sType;
+				std::map<std::wstring, unsigned int> mapBagIds;	// <bagId k="...">n</bagId>
+				std::vector<unsigned int> arrMapped;			// <a k="MappedFeaturePropertyBags"><bagId>n</bagId>...</a>
+			};
+			const CBag* GetBag(const CBag* pFrom, const std::wstring& sKey, const std::wstring& sType) const;
+
+			std::vector<CBag> m_arrBags;
+			std::wstring m_sXml;
+		};
 	} //Spreadsheet
 } // namespace OOX
 

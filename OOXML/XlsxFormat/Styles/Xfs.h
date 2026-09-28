@@ -123,7 +123,7 @@ namespace OOX
 		};
 
 		//not implemented:
-		//<extLst>
+		//<extLst> other than the checkbox xfComplement
 		class CXfs : public WritingElement
 		{
 		public:
@@ -167,6 +167,8 @@ namespace OOX
 			nullable<CAligment>								m_oAligment;
 			nullable<CProtection>							m_oProtection;
 
+			// extLst/ext[uri={C7286773-...}]/xfpb:xfComplement@i: index into featurePropertyBag.xml XFComplements
+			nullable_uint									m_oXfComplement;
 		};
 
 		class CCellXfs  : public WritingElementWithChilds<CXfs>

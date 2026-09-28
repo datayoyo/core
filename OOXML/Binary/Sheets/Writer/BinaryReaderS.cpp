@@ -1982,6 +1982,12 @@ int BinaryStyleTableReader::ReadXfs(BYTE type, long length, void* poResult)
 		pXfs->m_oXfId.Init();
 		pXfs->m_oXfId->SetValue(m_oBufferedStream.GetLong());
 	}
+	else if (c_oSerXfsTypes::Checkbox == type)
+	{
+		// complement 0 is the checkbox in the featurePropertyBag.xml added in ReadMainTable
+		if (m_oBufferedStream.GetBool())
+			pXfs->m_oXfComplement = (unsigned int)0;
+	}
 	else
 		res = c_oSerConstants::ReadUnknown;
 	return res;
@@ -10000,6 +10006,21 @@ int BinaryFileReader::ReadMainTable(OOX::Spreadsheet::CXlsx& oXlsx, NSBinPptxRW:
 		delete pPair->second;
 	}
 	mapMedia.clear();
+
+	OOX::Spreadsheet::CXlsb* pXlsb = dynamic_cast<OOX::Spreadsheet::CXlsb*>(&oXlsx);
+	if (oXlsx.m_pStyles && oXlsx.m_pStyles->m_oCellXfs.IsInit() && !(pXlsb && pXlsb->m_bWriteToXlsb))
+	{
+		std::vector<OOX::Spreadsheet::CXfs*>& arrXfs = oXlsx.m_pStyles->m_oCellXfs->m_arrItems;
+		for (size_t i = 0; i < arrXfs.size(); ++i)
+		{
+			if (arrXfs[i] && arrXfs[i]->m_oXfComplement.IsInit())
+			{
+				smart_ptr<OOX::File> oFile(new OOX::Spreadsheet::CFeaturePropertyBagFile(NULL));
+				oXlsx.m_pWorkbook->Add(oFile);
+				break;
+			}
+		}
+	}
 	return res;
 }
 void BinaryFileReader::initWorkbook(OOX::Spreadsheet::CWorkbook* pWorkbook)

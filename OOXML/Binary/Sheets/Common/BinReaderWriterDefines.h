@@ -147,7 +147,8 @@ namespace BinXlsxRW
 		QuotePrefix = 11,
 		XfId = 12,
 		Aligment = 13,
-		Protection = 14
+		Protection = 14,
+		Checkbox = 15 // bool: in-cell checkbox (xfpb:xfComplement resolving to a Checkbox cell control)
 	};}
 	namespace c_oSerProtectionTypes {enum c_oSerProtectionTypes
 	{

@@ -106,6 +106,7 @@ namespace OOX
 
 			extern const FileType RdRichValueTypes;
 			extern const FileType RichValueRel;
+			extern const FileType FeaturePropertyBag;
 			
 			extern const FileType XmlMaps;
 		} // namespace FileTypes
