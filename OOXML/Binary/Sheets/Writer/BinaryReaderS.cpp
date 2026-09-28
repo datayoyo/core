@@ -2527,10 +2527,17 @@ int BinaryWorkbookTableReader::ReadRichValueRels(BYTE type, long length, void* p
 	if (c_oSer_RichValueRels::Rel == type)
 	{
 		std::wstring sMedia = m_oBufferedStream.GetString4(length);
+		// media names are bare file names; drop any directory part so the path cannot leave media/
+		std::wstring::size_type nSep = sMedia.find_last_of(L"/\\");
+		if (std::wstring::npos != nSep)
+			sMedia = sMedia.substr(nSep + 1);
+		if (L"." == sMedia || L".." == sMedia)
+			sMedia.clear();
 		std::wstring sRId;
-		if (!sMedia.empty() && m_pOfficeDrawingConverter)
+		CImageFileFormatChecker oChecker;
+		std::wstring sPicture = m_pOfficeDrawingConverter ? m_pOfficeDrawingConverter->m_pBinaryReader->m_strFolder + FILE_SEPARATOR_STR + L"media" + FILE_SEPARATOR_STR + sMedia : L"";
+		if (!sMedia.empty() && m_pOfficeDrawingConverter && oChecker.isImageFile(sPicture))
 		{
-			std::wstring sPicture = m_pOfficeDrawingConverter->m_pBinaryReader->m_strFolder + FILE_SEPARATOR_STR + L"media" + FILE_SEPARATOR_STR + sMedia;
 			std::vector<smart_ptr<OOX::File>> additionalFiles;
 			NSBinPptxRW::_imageManager2Info oInfo = m_pOfficeDrawingConverter->m_pImageManager->GenerateImage(sPicture, additionalFiles, L"", L"");
 			if (!oInfo.sFilepathImage.empty())
