@@ -244,7 +244,11 @@ namespace BinXlsxRW
 		XmlMap = 30,
 		RdRichValue = 31,
 		RdRichValueStructure = 32,
-		RdRichValueTypes = 33
+		RdRichValueTypes = 33,
+		RichValueRels = 34
+	};}
+	namespace c_oSer_RichValueRels {enum c_oSer_RichValueRels {
+		Rel = 0 // media file name ("image1.png"), empty when the relationship is not an image
 	};}
 	namespace c_oSerWorkbookProtection {enum c_oSerWorkbookProtection{
 		AlgorithmName = 0,

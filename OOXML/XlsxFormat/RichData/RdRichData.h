@@ -382,5 +382,25 @@ namespace OOX
 		private:
 			CPath m_oReadPath;
 		};
+//------------------------------------------------------------------------------------------------------------------------
+		// xl/richData/richValueRel.xml: ordered list of image relationships used by _localImage rich values
+		class CRichValueRelFile : public OOX::File, public OOX::IFileContainer
+		{
+		public:
+			CRichValueRelFile(OOX::Document* pMain);
+			CRichValueRelFile(OOX::Document* pMain, const CPath& oRootPath, const CPath& oPath);
+			virtual ~CRichValueRelFile();
+
+			virtual void read(const CPath& oPath);
+			virtual void read(const CPath& oRootPath, const CPath& oPath);
+
+			virtual void write(const CPath& oPath, const CPath& oDirectory, CContentTypes& oContent) const;
+			virtual const OOX::FileType type() const;
+
+			virtual const CPath DefaultDirectory() const;
+			virtual const CPath DefaultFileName() const;
+
+			std::vector<std::wstring> m_arrRIds;
+		};
 	} //Spreadsheet
 } // namespace OOX

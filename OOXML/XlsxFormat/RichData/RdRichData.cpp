@@ -111,6 +111,73 @@ namespace Spreadsheet
 		oContent.Registration(type().OverrideType(), oDirectory, oPath.GetFilename());
 	}
 //---------------------------------------------------------------------------------------------------------------------------
+	CRichValueRelFile::CRichValueRelFile(OOX::Document* pMain) : OOX::File(pMain), OOX::IFileContainer(pMain)
+	{
+		m_bSpreadsheets = true;
+	}
+	CRichValueRelFile::CRichValueRelFile(OOX::Document* pMain, const CPath& oRootPath, const CPath& oPath) : OOX::File(pMain), OOX::IFileContainer(pMain)
+	{
+		m_bSpreadsheets = true;
+		read(oRootPath, oPath);
+	}
+	CRichValueRelFile::~CRichValueRelFile()
+	{
+	}
+	void CRichValueRelFile::read(const CPath& oPath)
+	{
+		CPath oRootPath;
+		read(oRootPath, oPath);
+	}
+	const OOX::FileType CRichValueRelFile::type() const
+	{
+		return OOX::Spreadsheet::FileTypes::RichValueRel;
+	}
+	const CPath CRichValueRelFile::DefaultDirectory() const
+	{
+		return type().DefaultDirectory();
+	}
+	const CPath CRichValueRelFile::DefaultFileName() const
+	{
+		return type().DefaultFileName();
+	}
+	void CRichValueRelFile::read(const CPath& oRootPath, const CPath& oPath)
+	{
+		IFileContainer::Read(oRootPath, oPath);
+
+		XmlUtils::CXmlLiteReader oReader;
+		if (!oReader.FromFile(oPath.GetPath()) || !oReader.ReadNextNode() || oReader.IsEmptyNode())
+			return;
+
+		int nCurDepth = oReader.GetDepth();
+		while (oReader.ReadNextSiblingNode(nCurDepth))
+		{
+			if (L"rel" != XmlUtils::GetNameNoNS(oReader.GetName()))
+				continue;
+			std::wstring sRId;
+			WritingElement_ReadAttributes_Start_No_NS(oReader)
+				WritingElement_ReadAttributes_ReadSingle(oReader, L"id", sRId)
+			WritingElement_ReadAttributes_End_No_NS(oReader)
+			m_arrRIds.push_back(sRId);
+		}
+	}
+	void CRichValueRelFile::write(const CPath& oPath, const CPath& oDirectory, CContentTypes& oContent) const
+	{
+		NSStringUtils::CStringBuilder sXml;
+		sXml.WriteString(L"<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>");
+		sXml.WriteString(L"<richValueRels xmlns=\"http://schemas.microsoft.com/office/spreadsheetml/2022/richvaluerel\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\">");
+		for (size_t i = 0; i < m_arrRIds.size(); ++i)
+		{
+			sXml.WriteString(L"<rel r:id=\"");
+			sXml.WriteEncodeXmlString(m_arrRIds[i]);
+			sXml.WriteString(L"\"/>");
+		}
+		sXml.WriteString(L"</richValueRels>");
+
+		NSFile::CFileBinary::SaveToFile(oPath.GetPath(), sXml.GetData());
+		oContent.Registration(type().OverrideType(), oDirectory, oPath.GetFilename());
+		IFileContainer::Write(oPath, oDirectory, oContent);
+	}
+//---------------------------------------------------------------------------------------------------------------------------
 	CRdRichValueStructureFile::CRdRichValueStructureFile(OOX::Document* pMain) : OOX::File(pMain)
 	{
 	}

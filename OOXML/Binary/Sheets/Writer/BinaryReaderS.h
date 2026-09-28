@@ -246,6 +246,7 @@ namespace BinXlsxRW
 		int ReadPivotCaches(BYTE type, long length, void* poResult);
 		int ReadPivotCache(BYTE type, long length, void* poResult);
 		
+		int ReadRichValueRels(BYTE type, long length, void* poResult);
 		int ReadConnections(BYTE type, long length, void* poResult);
 		int ReadConnection(BYTE type, long length, void* poResult);
 		int ReadConnectionDbPr(BYTE type, long length, void* poResult);

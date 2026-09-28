@@ -2412,9 +2412,17 @@ int BinaryWorkbookTableReader::ReadWorkbookTableContent(BYTE type, long length, 
 		pOfficeArtExtension->m_sUri = L"{D0CA8CA8-9F24-4464-BF8E-62219DCF47F9}";
 		pOfficeArtExtension->m_sAdditionalNamespace = L"xmlns:x15=\"http://schemas.microsoft.com/office/spreadsheetml/2010/11/main\"";
 
-		if (m_oWorkbook.m_oExtLst.IsInit() == false)
-			m_oWorkbook.m_oExtLst.Init();
-		m_oWorkbook.m_oExtLst->m_arrExt.push_back(pOfficeArtExtension);
+		if (pOfficeArtExtension->m_oTimelineCacheRefs->m_arrItems.empty())
+		{
+			// the editor sends the record even without timelines; an empty x15 ext is not valid for Excel
+			delete pOfficeArtExtension;
+		}
+		else
+		{
+			if (m_oWorkbook.m_oExtLst.IsInit() == false)
+				m_oWorkbook.m_oExtLst.Init();
+			m_oWorkbook.m_oExtLst->m_arrExt.push_back(pOfficeArtExtension);
+		}
 	}
 	else if (c_oSerWorkbookTypes::SlicerCaches == type)
 	{
@@ -2497,6 +2505,44 @@ int BinaryWorkbookTableReader::ReadWorkbookTableContent(BYTE type, long length, 
 
 		smart_ptr<OOX::File> oFile = oRichValueTypesFile.smart_dynamic_cast<OOX::File>();
 		m_oWorkbook.Add(oFile);
+	}
+	else if (c_oSerWorkbookTypes::RichValueRels == type)
+	{
+		smart_ptr<OOX::Spreadsheet::CRichValueRelFile> oRichValueRelFile(new OOX::Spreadsheet::CRichValueRelFile(NULL));
+		if (m_oWorkbook.OOX::File::m_pMainDocument)
+			oRichValueRelFile->OOX::File::m_pMainDocument = m_oWorkbook.OOX::File::m_pMainDocument;
+		READ1_DEF(length, res, this->ReadRichValueRels, oRichValueRelFile.GetPointer());
+
+		smart_ptr<OOX::File> oFile = oRichValueRelFile.smart_dynamic_cast<OOX::File>();
+		m_oWorkbook.Add(oFile);
+	}
+	else
+		res = c_oSerConstants::ReadUnknown;
+	return res;
+}
+int BinaryWorkbookTableReader::ReadRichValueRels(BYTE type, long length, void* poResult)
+{
+	OOX::Spreadsheet::CRichValueRelFile* pRichValueRel = static_cast<OOX::Spreadsheet::CRichValueRelFile*>(poResult);
+	int res = c_oSerConstants::ReadOk;
+	if (c_oSer_RichValueRels::Rel == type)
+	{
+		std::wstring sMedia = m_oBufferedStream.GetString4(length);
+		std::wstring sRId;
+		if (!sMedia.empty() && m_pOfficeDrawingConverter)
+		{
+			std::wstring sPicture = m_pOfficeDrawingConverter->m_pBinaryReader->m_strFolder + FILE_SEPARATOR_STR + L"media" + FILE_SEPARATOR_STR + sMedia;
+			std::vector<smart_ptr<OOX::File>> additionalFiles;
+			NSBinPptxRW::_imageManager2Info oInfo = m_pOfficeDrawingConverter->m_pImageManager->GenerateImage(sPicture, additionalFiles, L"", L"");
+			if (!oInfo.sFilepathImage.empty())
+			{
+				NSCommon::smart_ptr<OOX::Image> pImage(new OOX::Image(NULL, false));
+				pImage->set_filename(oInfo.sFilepathImage, false);
+				smart_ptr<OOX::File> pImageFile = pImage.smart_dynamic_cast<OOX::File>();
+				sRId = pRichValueRel->Add(pImageFile).get();
+			}
+		}
+		// ponytail: an unresolved media keeps its slot with an empty rId so rel indices stay aligned
+		pRichValueRel->m_arrRIds.push_back(sRId);
 	}
 	else
 		res = c_oSerConstants::ReadUnknown;

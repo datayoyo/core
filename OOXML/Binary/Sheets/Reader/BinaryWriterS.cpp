@@ -2364,6 +2364,30 @@ void BinaryWorkbookTableWriter::WriteWorkbook(OOX::Spreadsheet::CWorkbook& workb
 		WriteRichValueTypes(pRichValueTypes->m_oRvTypesInfo.GetPointer());
 		m_oBcw.WriteItemWithLengthEnd(nCurPos);
 	}
+	pFile = workbook.Find(OOX::Spreadsheet::FileTypes::RichValueRel);
+	OOX::Spreadsheet::CRichValueRelFile* pRichValueRel = dynamic_cast<OOX::Spreadsheet::CRichValueRelFile*>(pFile.GetPointer());
+	if (pRichValueRel)
+	{
+		nCurPos = m_oBcw.WriteItemStart(c_oSerWorkbookTypes::RichValueRels);
+		for (size_t i = 0; i < pRichValueRel->m_arrRIds.size(); ++i)
+		{
+			std::wstring sMedia;
+			smart_ptr<OOX::File> pRelFile = pRichValueRel->Find(pRichValueRel->m_arrRIds[i]);
+			smart_ptr<OOX::Image> pImage = pRelFile.IsInit() && OOX::FileTypes::Image == pRelFile->type() ? pRelFile.smart_dynamic_cast<OOX::Image>() : smart_ptr<OOX::Image>();
+			if (pImage.IsInit())
+			{
+				std::wstring additionalPath;
+				int additionalType = 0;
+				double dW = -1.0, dH = -1.0;
+				NSShapeImageGen::CMediaInfo oId = m_oBcw.m_oStream.m_pCommon->m_pMediaManager->WriteImage(pImage->filename().GetPath(), dW, dH, additionalPath, additionalType);
+				sMedia = oId.GetPath2();
+			}
+			int nRelPos = m_oBcw.WriteItemStart(c_oSer_RichValueRels::Rel);
+			m_oBcw.m_oStream.WriteStringW3(sMedia);
+			m_oBcw.WriteItemEnd(nRelPos);
+		}
+		m_oBcw.WriteItemWithLengthEnd(nCurPos);
+	}
 }
 void BinaryWorkbookTableWriter::WriteRichValueData(OOX::Spreadsheet::CRichValueData* pData)
 {
