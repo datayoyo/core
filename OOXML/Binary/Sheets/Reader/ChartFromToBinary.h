@@ -257,6 +257,8 @@ namespace BinXlsxRW
 		int ReadCT_filterExceptions		(BYTE type, long length, void* poResult);
 		int ReadCT_filterException		(BYTE type, long length, void* poResult);
 		int ReadCT_dataLabelsRange		(BYTE type, long length, void* poResult);
+		int ReadCT_DlblFieldTable		(BYTE type, long length, void* poResult);
+		int ReadCT_DlblFieldTableEntry	(BYTE type, long length, void* poResult);
 
 		int ReadCT_userShapes			(BYTE type, long length, void* poResult);
 		int ReadCT_userShape			(BYTE type, long length, void* poResult);
