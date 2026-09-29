@@ -403,6 +403,10 @@ namespace BinXlsxRW
 	const BYTE c_oserct_showLeaderLines = 27;
 	const BYTE c_oserct_leaderLines = 28;
 	const BYTE c_oserct_dlblFieldTable = 29;
+	const BYTE c_oserct_dlblFTEntry = 0;
+	const BYTE c_oserct_dlblFTEntryGUID = 2;
+	const BYTE c_oserct_dlblFTEntryF = 0;
+	const BYTE c_oserct_dlblFTEntryCACHE = 1;
 
 	const BYTE c_oserct_dlblposVAL = 0;
 
@@ -3050,6 +3054,42 @@ namespace BinXlsxRW
 			res = c_oSerConstants::ReadUnknown;
 		return res;
 	}
+	int BinaryChartReader::ReadCT_DlblFieldTable(BYTE type, long length, void* poResult)
+	{
+		int res = c_oSerConstants::ReadOk;
+		std::vector<OOX::Spreadsheet::CT_DlblFieldTableEntry*>* pVal = static_cast<std::vector<OOX::Spreadsheet::CT_DlblFieldTableEntry*>*>(poResult);
+
+		if (type == c_oserct_dlblFTEntry)
+		{
+			pVal->push_back(new OOX::Spreadsheet::CT_DlblFieldTableEntry);
+			READ1_DEF(length, res, this->ReadCT_DlblFieldTableEntry, pVal->back());
+		}
+		else
+			res = c_oSerConstants::ReadUnknown;
+		return res;
+	}
+	int BinaryChartReader::ReadCT_DlblFieldTableEntry(BYTE type, long length, void* poResult)
+	{
+		int res = c_oSerConstants::ReadOk;
+		OOX::Spreadsheet::CT_DlblFieldTableEntry* pVal = static_cast<OOX::Spreadsheet::CT_DlblFieldTableEntry*>(poResult);
+
+		if (type == c_oserct_dlblFTEntryGUID)
+		{
+			pVal->m_txfldGUID = m_oBufferedStream.GetString4(length);
+		}
+		else if (type == c_oserct_dlblFTEntryF)
+		{
+			pVal->m_f = m_oBufferedStream.GetString4(length);
+		}
+		else if (type == c_oserct_dlblFTEntryCACHE)
+		{
+			pVal->m_dlblFieldTableCache.Init();
+			READ1_DEF(length, res, this->ReadCT_StrData, pVal->m_dlblFieldTableCache.GetPointer());
+		}
+		else
+			res = c_oSerConstants::ReadUnknown;
+		return res;
+	}
 	int BinaryChartReader::ReadCT_dataLabelsRange(BYTE type, long length, void* poResult)
 	{
 		int res = c_oSerConstants::ReadOk;
@@ -3588,6 +3628,10 @@ namespace BinXlsxRW
 				bool val;
 				READ1_DEF(length, res, this->ReadCT_Boolean, &val);
 				poVal->m_showLeaderLines = val;
+			}break;
+			case c_oserct_dlblFieldTable:
+			{
+				READ1_DEF(length, res, this->ReadCT_DlblFieldTable, &poVal->m_dlblFieldTable);
 			}break;
 			case c_oserct_leaderLines:
 			{
@@ -9209,7 +9253,35 @@ namespace BinXlsxRW
 			WriteCT_Boolean(*oVal.m_showDataLabelsRange);
 			m_oBcw.WriteItemEnd(nCurPos);
 		}
-		//if (NULL != m_dlblFieldTable
+		if (!oVal.m_dlblFieldTable.empty())
+		{
+			int nCurPos = m_oBcw.WriteItemStart(c_oserct_dlblFieldTable);
+			for (size_t i = 0; i < oVal.m_dlblFieldTable.size(); ++i)
+			{
+				OOX::Spreadsheet::CT_DlblFieldTableEntry* pEntry = oVal.m_dlblFieldTable[i];
+				int nEntryPos = m_oBcw.WriteItemStart(c_oserct_dlblFTEntry);
+				if (pEntry->m_txfldGUID.IsInit())
+				{
+					int nPos = m_oBcw.WriteItemStart(c_oserct_dlblFTEntryGUID);
+					m_oBcw.m_oStream.WriteStringW4(*pEntry->m_txfldGUID);
+					m_oBcw.WriteItemEnd(nPos);
+				}
+				if (pEntry->m_f.IsInit())
+				{
+					int nPos = m_oBcw.WriteItemStart(c_oserct_dlblFTEntryF);
+					m_oBcw.m_oStream.WriteStringW4(*pEntry->m_f);
+					m_oBcw.WriteItemEnd(nPos);
+				}
+				if (pEntry->m_dlblFieldTableCache.IsInit())
+				{
+					int nPos = m_oBcw.WriteItemStart(c_oserct_dlblFTEntryCACHE);
+					WriteCT_StrData(*pEntry->m_dlblFieldTableCache);
+					m_oBcw.WriteItemEnd(nPos);
+				}
+				m_oBcw.WriteItemEnd(nEntryPos);
+			}
+			m_oBcw.WriteItemEnd(nCurPos);
+		}
 
 		if (oVal.m_showLeaderLines.IsInit())
 		{

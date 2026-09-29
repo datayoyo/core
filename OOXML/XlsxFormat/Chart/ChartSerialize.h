@@ -1079,6 +1079,16 @@ namespace OOX
 			void toXML(const std::wstring& sNodeName, NSStringUtils::CStringBuilder& writer) const;
 			EElementType getType();
 		};
+		class CT_DlblFieldTableEntry
+		{//c15: the cell behind a [CELLREF] field of a data label's rich text
+		public:
+			nullable_string m_txfldGUID;
+			nullable_string m_f;
+			nullable<CT_StrData> m_dlblFieldTableCache;
+
+			void fromXML(XmlUtils::CXmlLiteReader& oReader);
+			void toXML(NSStringUtils::CStringBuilder& writer) const;
+		};
 		class CT_DLbl : public WritingElement
 		{
 		public:
@@ -1091,7 +1101,7 @@ namespace OOX
 			//ext
 			nullableBoolVal m_xForSave;
 			nullableBoolVal m_showDataLabelsRange;
-			//CT_DlblFieldTable* m_dlblFieldTable
+			std::vector<CT_DlblFieldTableEntry*> m_dlblFieldTable;
 
 			nullableBoolVal m_showLeaderLines;		//for CT_DLbls
 			CT_ChartLines* m_leaderLines;		//for CT_DLbls

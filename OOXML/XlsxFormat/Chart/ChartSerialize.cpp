@@ -4339,6 +4339,42 @@ xmlns:c16r2=\"http://schemas.microsoft.com/office/drawing/2015/06/chart\"");
 			break;
 			}
 		}
+		void CT_DlblFieldTableEntry::fromXML(XmlUtils::CXmlLiteReader& oReader)
+		{
+			if (oReader.IsEmptyNode())
+				return;
+
+			int nParentDepth = oReader.GetDepth();
+			while (oReader.ReadNextSiblingNode(nParentDepth))
+			{
+				std::wstring sName = XmlUtils::GetNameNoNS(oReader.GetName());
+				if (L"txfldGUID" == sName)
+					m_txfldGUID = oReader.GetText2();
+				else if (L"f" == sName)
+					m_f = oReader.GetText2();
+				else if (L"dlblFieldTableCache" == sName)
+					m_dlblFieldTableCache = oReader;
+			}
+		}
+		void CT_DlblFieldTableEntry::toXML(NSStringUtils::CStringBuilder& writer) const
+		{
+			writer.WriteString(L"<c15:dlblFTEntry>");
+			if (m_txfldGUID.IsInit())
+			{
+				writer.WriteString(L"<c15:txfldGUID>");
+				writer.WriteEncodeXmlString(*m_txfldGUID);
+				writer.WriteString(L"</c15:txfldGUID>");
+			}
+			if (m_f.IsInit())
+			{
+				writer.WriteString(L"<c15:f>");
+				writer.WriteEncodeXmlString(*m_f);
+				writer.WriteString(L"</c15:f>");
+			}
+			if (m_dlblFieldTableCache.IsInit())
+				m_dlblFieldTableCache->toXML(L"c15:dlblFieldTableCache", writer);
+			writer.WriteString(L"</c15:dlblFTEntry>");
+		}
 		CT_DLbl::CT_DLbl()
 		{
 	//ext
@@ -4349,6 +4385,8 @@ xmlns:c16r2=\"http://schemas.microsoft.com/office/drawing/2015/06/chart\"");
 		
 			if (NULL != m_leaderLines)
 				delete m_leaderLines;
+			for (size_t i = 0; i < m_dlblFieldTable.size(); ++i)
+				delete m_dlblFieldTable[i];
 
 			for (size_t i = 0; i < m_Items.size(), i < m_ItemsElementName0.size(); ++i)
 				toDelete(*m_ItemsElementName0[i], m_Items[i]);
@@ -4513,6 +4551,17 @@ xmlns:c16r2=\"http://schemas.microsoft.com/office/drawing/2015/06/chart\"");
 				{
 					m_showDataLabelsRange = oReader;
 				}
+				else if (L"dlblFieldTable" == sName && !oReader.IsEmptyNode())
+				{
+					int nTableDepth = oReader.GetDepth();
+					while (oReader.ReadNextSiblingNode(nTableDepth))
+					{
+						if (L"dlblFTEntry" != XmlUtils::GetNameNoNS(oReader.GetName()))
+							continue;
+						m_dlblFieldTable.push_back(new CT_DlblFieldTableEntry);
+						m_dlblFieldTable.back()->fromXML(oReader);
+					}
+				}
 				else if (L"showLeaderLines" == sName)
 				{
 					m_showLeaderLines = oReader;
@@ -4540,6 +4589,13 @@ xmlns:c16r2=\"http://schemas.microsoft.com/office/drawing/2015/06/chart\"");
 			{
 				ItemsChoiceType4 eType = *m_ItemsElementName0[i];
 				toXML(writer, false, eType, m_Items[i], sNodeNS);
+			}
+			if (!m_dlblFieldTable.empty())
+			{
+				writer.WriteString(L"<c15:dlblFieldTable>");
+				for (size_t i = 0; i < m_dlblFieldTable.size(); ++i)
+					m_dlblFieldTable[i]->toXML(writer);
+				writer.WriteString(L"</c15:dlblFieldTable>");
 			}
 			m_xForSave.toXML(sNodeNS + L":xForSave", writer);
 			m_showDataLabelsRange.toXML(sNodeNS + L":showDataLabelsRange", writer);
