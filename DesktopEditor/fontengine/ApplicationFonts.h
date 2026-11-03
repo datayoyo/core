@@ -123,10 +123,12 @@ public:
 		// 5 [Segoe]
 		m_mapNamesToIndex.insert(std::pair<std::wstring, int>(L"Segoe", 5));
 		m_mapNamesToIndex.insert(std::pair<std::wstring, int>(L"Segoe UI", 5));
+		m_mapNamesToIndex.insert(std::pair<std::wstring, int>(L"Selawik", 5));
 
 		std::vector<std::wstring> ar5;
 		ar5.push_back(L"Segoe");
 		ar5.push_back(L"Segoe UI");
+		ar5.push_back(L"Selawik");
 		m_listLikes.push_back(ar5);
 
 		// 6 [Cambria]
@@ -137,6 +139,17 @@ public:
 		ar6.push_back(L"Cambria");
 		ar6.push_back(L"Caladea");
 		m_listLikes.push_back(ar6);
+
+		// 7-9 [Segoe UI weights]: Selawik (OFL) has Segoe UI's metrics weight by weight (sdkjs common/libfont/map.js)
+		const wchar_t* weights[3][2] = {{L"Segoe UI Semibold", L"Selawik Semibold"},
+										{L"Segoe UI Semilight", L"Selawik Semilight"},
+										{L"Segoe UI Light", L"Selawik Light"}};
+		for (int i = 0; i < 3; ++i)
+		{
+			m_mapNamesToIndex.insert(std::pair<std::wstring, int>(weights[i][0], 7 + i));
+			m_mapNamesToIndex.insert(std::pair<std::wstring, int>(weights[i][1], 7 + i));
+			m_listLikes.push_back(std::vector<std::wstring>{weights[i][0], weights[i][1]});
+		}
 	}
 
 	bool IsLikeFonts(const std::wstring& name, const std::wstring& req)
