@@ -170,6 +170,7 @@ namespace BinXlsxRW
 		NSFontCutter::CEmbeddedFontsManager*	m_pEmbeddedFontsManager;
 	public:
 		BinaryStyleTableWriter(NSBinPptxRW::CBinaryFileWriter &oCBufferedStream, NSFontCutter::CEmbeddedFontsManager* pEmbeddedFontsManager);
+		OOX::Spreadsheet::CFeaturePropertyBags* m_pFeaturePropertyBags = NULL; // datayoyo: resolves xf complements to checkboxes
 		void Write(OOX::Spreadsheet::CStyles& styles, PPTX::Theme* pTheme, DocWrapper::FontProcessor& oFontProcessor);
 		void WriteStylesContent(OOX::Spreadsheet::CStyles& styles, PPTX::Theme* pTheme, DocWrapper::FontProcessor& oFontProcessor);
 		void WriteBorders(const OOX::Spreadsheet::CBorders& borders, OOX::Spreadsheet::CIndexedColors* pIndexedColors, PPTX::Theme* pTheme);

@@ -205,6 +205,9 @@ namespace OOX
 			virtual void fromXML(XmlUtils::CXmlLiteReader& oReader);
 
 			virtual EElementType getType() const;
+
+			// datayoyo: does xfComplement i resolve to an in-cell checkbox ([MS-XLSX] 2.3.9)
+			bool IsCheckbox(unsigned int nComplement) const;
 		};
 //------------------------------------------------------------------------------------------------------------------------		
 		class CFeaturePropertyBagFile : public OOX::File
@@ -224,6 +227,8 @@ namespace OOX
 			virtual const CPath DefaultFileName() const;
 
 			const CPath& GetReadPath();
+			// datayoyo: the bags Excel writes for in-cell checkboxes, xfComplement 0 being the checkbox
+			void InitCheckbox();
 
 			nullable<CFeaturePropertyBags> m_oPropertyBags;
 		private:

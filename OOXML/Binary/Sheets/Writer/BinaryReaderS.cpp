@@ -1991,6 +1991,19 @@ int BinaryStyleTableReader::ReadXfs(BYTE type, long length, void* poResult)
 		pXfs->m_oExtLst->m_arrExt.back()->m_sAdditionalNamespace = L"xmlns:xfpb=\"http://schemas.microsoft.com/office/spreadsheetml/2022/featurepropertybag\"";
 		pXfs->m_oExtLst->m_arrExt.back()->m_oXfComplement = m_oBufferedStream.GetULong();
 	}
+	else if (c_oSerXfsTypes::Checkbox == type)
+	{
+		// datayoyo: the editor keeps no complement for a checkbox; it becomes complement 0 of the bags ReadMainTable adds
+		bool bComplement = pXfs->m_oExtLst.IsInit() && false == pXfs->m_oExtLst->m_arrExt.empty() && pXfs->m_oExtLst->m_arrExt[0]->m_oXfComplement.IsInit();
+		if (m_oBufferedStream.GetBool() && !bComplement)
+		{
+			pXfs->m_oExtLst.Init();
+			pXfs->m_oExtLst->m_arrExt.push_back(new OOX::Drawing::COfficeArtExtension());
+			pXfs->m_oExtLst->m_arrExt.back()->m_sUri = L"{C7286773-470A-42A8-94C5-96B5CB345126}";
+			pXfs->m_oExtLst->m_arrExt.back()->m_sAdditionalNamespace = L"xmlns:xfpb=\"http://schemas.microsoft.com/office/spreadsheetml/2022/featurepropertybag\"";
+			pXfs->m_oExtLst->m_arrExt.back()->m_oXfComplement = (unsigned int)0;
+		}
+	}
 	else
 		res = c_oSerConstants::ReadUnknown;
 	return res;
@@ -10270,6 +10283,28 @@ int BinaryFileReader::ReadMainTable(OOX::Spreadsheet::CXlsx& oXlsx, NSBinPptxRW:
 		delete pPair->second;
 	}
 	mapMedia.clear();
+
+	// datayoyo: the editor saves checkboxes as complements without the bags: add the ones Excel writes (Find returns an
+	// UnknowTypeFile, never null, when there are none)
+	// shortcut: a binary with bags but a checkbox without complement maps it to complement 0 of those bags; only the editor writes
+	// Checkbox, and it writes no bags
+	OOX::Spreadsheet::CXlsb* pXlsbOut = dynamic_cast<OOX::Spreadsheet::CXlsb*>(&oXlsx);
+	if (oXlsx.m_pWorkbook && oXlsx.m_pStyles && oXlsx.m_pStyles->m_oCellXfs.IsInit() && !(pXlsbOut && pXlsbOut->m_bWriteToXlsb)
+		&& NULL == dynamic_cast<OOX::Spreadsheet::CFeaturePropertyBagFile*>(oXlsx.m_pWorkbook->Find(OOX::Spreadsheet::FileTypes::FeaturePropertyBag).GetPointer()))
+	{
+		std::vector<OOX::Spreadsheet::CXfs*>& arrXfs = oXlsx.m_pStyles->m_oCellXfs->m_arrItems;
+		for (size_t i = 0; i < arrXfs.size(); ++i)
+		{
+			if (arrXfs[i] && arrXfs[i]->m_oExtLst.IsInit() && false == arrXfs[i]->m_oExtLst->m_arrExt.empty() && arrXfs[i]->m_oExtLst->m_arrExt[0]->m_oXfComplement.IsInit())
+			{
+				OOX::Spreadsheet::CFeaturePropertyBagFile* pBags = new OOX::Spreadsheet::CFeaturePropertyBagFile(NULL);
+				pBags->InitCheckbox();
+				smart_ptr<OOX::File> oFile(pBags);
+				oXlsx.m_pWorkbook->Add(oFile);
+				break;
+			}
+		}
+	}
 	return res;
 }
 void BinaryFileReader::initWorkbook(OOX::Spreadsheet::CWorkbook* pWorkbook)

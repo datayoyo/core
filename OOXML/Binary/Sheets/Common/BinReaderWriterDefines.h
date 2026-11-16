@@ -148,7 +148,8 @@ namespace BinXlsxRW
 		XfId = 12,
 		Aligment = 13,
 		Protection = 14,
-		Complement = 15
+		Complement = 15,
+		Checkbox = 16 // datayoyo, bool: the xf's complement resolves to a Checkbox cell control
 	};}
 	namespace c_oSerProtectionTypes {enum c_oSerProtectionTypes
 	{

@@ -1439,6 +1439,56 @@ xmlns:x16r2=\"http://schemas.microsoft.com/office/spreadsheetml/2015/02/main\">"
 
 			m_oPropertyBags = oReader;
 		}
+		void CFeaturePropertyBagFile::InitCheckbox()
+		{
+			XmlUtils::CXmlLiteReader oReader;
+			if (oReader.FromString(L"<FeaturePropertyBags xmlns=\"http://schemas.microsoft.com/office/spreadsheetml/2022/featurepropertybag\">\
+<bag type=\"Checkbox\"/>\
+<bag type=\"XFControls\"><bagId k=\"CellControl\">0</bagId></bag>\
+<bag type=\"XFComplement\"><bagId k=\"XFControls\">1</bagId></bag>\
+<bag type=\"XFComplements\" extRef=\"XFComplementsMapperExtRef\"><a k=\"MappedFeaturePropertyBags\"><bagId>2</bagId></a></bag>\
+</FeaturePropertyBags>") && oReader.ReadNextNode())
+				m_oPropertyBags = oReader;
+		}
+		// the bag nId if it has the type sType
+		static const CFeaturePropertyBag* GetFeaturePropertyBag(const CFeaturePropertyBags& oBags, unsigned int nId, const std::wstring& sType)
+		{
+			if (nId >= oBags.m_arrItems.size() || !oBags.m_arrItems[nId] || !oBags.m_arrItems[nId]->m_oType.IsInit() || sType != *oBags.m_arrItems[nId]->m_oType)
+				return NULL;
+			return oBags.m_arrItems[nId];
+		}
+		// the bag pFrom refers to by <bagId k="sKey"> if it has the type sType
+		static const CFeaturePropertyBag* GetFeaturePropertyBag(const CFeaturePropertyBags& oBags, const CFeaturePropertyBag* pFrom, const std::wstring& sKey, const std::wstring& sType)
+		{
+			for (size_t i = 0; pFrom && i < pFrom->m_arrItems.size(); ++i)
+			{
+				const CBagFeatureProperty* pRef = dynamic_cast<const CBagFeatureProperty*>(pFrom->m_arrItems[i]);
+				if (pRef && pRef->m_oK.IsInit() && sKey == *pRef->m_oK && pRef->m_oContent.IsInit())
+					return GetFeaturePropertyBag(oBags, *pRef->m_oContent, sType);
+			}
+			return NULL;
+		}
+		bool CFeaturePropertyBags::IsCheckbox(unsigned int nComplement) const
+		{
+			// xfComplement i -> XFComplements/a[k=MappedFeaturePropertyBags]/bagId[i] -> XFComplement -> XFControls -> CellControl
+			for (size_t i = 0; i < m_arrItems.size(); ++i)
+			{
+				if (!m_arrItems[i] || !m_arrItems[i]->m_oType.IsInit() || L"XFComplements" != *m_arrItems[i]->m_oType)
+					continue;
+				for (size_t j = 0; j < m_arrItems[i]->m_arrItems.size(); ++j)
+				{
+					const CArrayFeatureProperty* pMapped = dynamic_cast<const CArrayFeatureProperty*>(m_arrItems[i]->m_arrItems[j]);
+					if (!pMapped || !pMapped->m_oK.IsInit() || L"MappedFeaturePropertyBags" != *pMapped->m_oK)
+						continue;
+					const CBagFeatureProperty* pRef = nComplement < pMapped->m_arrItems.size() ? dynamic_cast<const CBagFeatureProperty*>(pMapped->m_arrItems[nComplement]) : NULL;
+					if (!pRef || !pRef->m_oContent.IsInit())
+						return false;
+					const CFeaturePropertyBag* pControls = GetFeaturePropertyBag(*this, GetFeaturePropertyBag(*this, *pRef->m_oContent, L"XFComplement"), L"XFControls", L"XFControls");
+					return NULL != GetFeaturePropertyBag(*this, pControls, L"CellControl", L"Checkbox");
+				}
+			}
+			return false;
+		}
 		void CFeaturePropertyBagFile::write(const CPath& oPath, const CPath& oDirectory, CContentTypes& oContent) const
 		{
 			if (false == m_oPropertyBags.IsInit()) return;
