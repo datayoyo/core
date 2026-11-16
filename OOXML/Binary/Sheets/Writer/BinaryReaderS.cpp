@@ -2434,9 +2434,17 @@ int BinaryWorkbookTableReader::ReadWorkbookTableContent(BYTE type, long length, 
 		pOfficeArtExtension->m_sUri = L"{D0CA8CA8-9F24-4464-BF8E-62219DCF47F9}";
 		pOfficeArtExtension->m_sAdditionalNamespace = L"xmlns:x15=\"http://schemas.microsoft.com/office/spreadsheetml/2010/11/main\"";
 
-		if (m_oWorkbook.m_oExtLst.IsInit() == false)
-			m_oWorkbook.m_oExtLst.Init();
-		m_oWorkbook.m_oExtLst->m_arrExt.push_back(pOfficeArtExtension);
+		if (pOfficeArtExtension->m_oTimelineCacheRefs->m_arrItems.empty())
+		{
+			// the editor sends the record even without timelines; an empty x15 ext is not valid for Excel
+			delete pOfficeArtExtension;
+		}
+		else
+		{
+			if (m_oWorkbook.m_oExtLst.IsInit() == false)
+				m_oWorkbook.m_oExtLst.Init();
+			m_oWorkbook.m_oExtLst->m_arrExt.push_back(pOfficeArtExtension);
+		}
 	}
 	else if (c_oSerWorkbookTypes::SlicerCaches == type)
 	{
