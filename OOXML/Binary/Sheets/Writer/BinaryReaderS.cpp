@@ -9270,11 +9270,19 @@ int BinaryWorkbookTableReader::ReadRichValueRel(BYTE type, long length, void* po
 		OOX::Spreadsheet::CRichRel* pRichRel = new(OOX::Spreadsheet::CRichRel);
 		pRichValueRels->m_arrItems.push_back(pRichRel);
 
-		std::wstring image_filename = m_oBufferedStream.GetString2(length);
+		// the writer leaves the item empty for a rel that is not an image: no string to read
+		std::wstring image_filename = length > 0 ? m_oBufferedStream.GetString2(length) : L"";
+		// the name comes from the editor: a bare file name, or the copy below could read any file x2t can reach
+		std::wstring::size_type nSep = image_filename.find_last_of(L"/\\");
+		if (std::wstring::npos != nSep)
+			image_filename = image_filename.substr(nSep + 1);
+		std::wstring srcMedia = m_oBufferedStream.m_strFolder + FILE_SEPARATOR_STR + L"media" + FILE_SEPARATOR_STR;
+		CImageFileFormatChecker oChecker;
+		if (L"." == image_filename || L".." == image_filename || (!image_filename.empty() && !oChecker.isImageFile(srcMedia + image_filename)))
+			image_filename.clear();
 
 		if (pRichRel && false == image_filename.empty())
 		{
-			std::wstring srcMedia = m_oBufferedStream.m_strFolder + FILE_SEPARATOR_STR + L"media" + FILE_SEPARATOR_STR;
 			int idImage = m_oBufferedStream.m_nCountImage++;
 			std::wstring image_filename_dst = L"image" + std::to_wstring(idImage) + OOX::CPath(image_filename).GetExtention();
 
